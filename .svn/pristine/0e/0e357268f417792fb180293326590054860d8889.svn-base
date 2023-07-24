@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.cybercrowd.admin.mapper.PlayerInfoMapper">
+
+    <resultMap type="PlayerInfo" id="PlayerInfoResult">
+        <result property="id"    column="id"    />
+        <result property="roundNo"    column="round_no"    />
+        <result property="playerIndex"    column="player_index"    />
+        <result property="playerAddress"    column="player_address"    />
+        <result property="inviteCode"    column="invite_code"    />
+        <result property="inviteCodeBy"    column="invite_code_by"    />
+        <result property="invitePlayer"    column="invite_player"    />
+        <result property="payAmount"    column="pay_amount"    />
+        <result property="bonusToken"    column="bonus_token"    />
+        <result property="bonusAmount"    column="bonus_amount"    />
+        <result property="bonus"    column="bonus"    />
+        <result property="winningStatus"    column="winning_status"    />
+        <result property="gameStatus"    column="game_status"    />
+        <result property="lotteryTime"    column="lottery_time"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectPlayerInfoVo">
+        select id, round_no, player_index, player_address, invite_code, invite_code_by, invite_player, pay_amount, bonus_token, bonus_amount, bonus, winning_status, game_status, lottery_time, create_time, update_time from player_info
+    </sql>
+
+    <select id="selectPlayerInfoList" parameterType="PlayerInfo" resultMap="PlayerInfoResult">
+        <include refid="selectPlayerInfoVo"/>
+        <where>
+            <if test="roundNo != null  and roundNo != ''"> and round_no = #{roundNo}</if>
+            <if test="playerIndex != null "> and player_index = #{playerIndex}</if>
+            <if test="playerAddress != null  and playerAddress != ''"> and player_address = #{playerAddress}</if>
+            <if test="inviteCode != null  and inviteCode != ''"> and invite_code = #{inviteCode}</if>
+            <if test="inviteCodeBy != null  and inviteCodeBy != ''"> and invite_code_by = #{inviteCodeBy}</if>
+            <if test="invitePlayer != null  and invitePlayer != ''"> and invite_player = #{invitePlayer}</if>
+            <if test="payAmount != null  and payAmount != ''"> and pay_amount = #{payAmount}</if>
+            <if test="bonusToken != null "> and bonus_token = #{bonusToken}</if>
+            <if test="bonusAmount != null "> and bonus_amount = #{bonusAmount}</if>
+            <if test="bonus != null "> and bonus = #{bonus}</if>
+            <if test="winningStatus != null  and winningStatus != ''"> and winning_status = #{winningStatus}</if>
+            <if test="gameStatus != null  and gameStatus != ''"> and game_status = #{gameStatus}</if>
+            <if test="lotteryTime != null "> and lottery_time = #{lotteryTime}</if>
+        </where>
+    </select>
+
+    <select id="selectPlayerInfoById" parameterType="Long" resultMap="PlayerInfoResult">
+        <include refid="selectPlayerInfoVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertPlayerInfo" parameterType="PlayerInfo" useGeneratedKeys="true" keyProperty="id">
+        insert into player_info
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="roundNo != null and roundNo != ''">round_no,</if>
+            <if test="playerIndex != null">player_index,</if>
+            <if test="playerAddress != null and playerAddress != ''">player_address,</if>
+            <if test="inviteCode != null and inviteCode != ''">invite_code,</if>
+            <if test="inviteCodeBy != null">invite_code_by,</if>
+            <if test="invitePlayer != null">invite_player,</if>
+            <if test="payAmount != null and payAmount != ''">pay_amount,</if>
+            <if test="bonusToken != null">bonus_token,</if>
+            <if test="bonusAmount != null">bonus_amount,</if>
+            <if test="bonus != null">bonus,</if>
+            <if test="winningStatus != null and winningStatus != ''">winning_status,</if>
+            <if test="gameStatus != null and gameStatus != ''">game_status,</if>
+            <if test="lotteryTime != null">lottery_time,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="roundNo != null and roundNo != ''">#{roundNo},</if>
+            <if test="playerIndex != null">#{playerIndex},</if>
+            <if test="playerAddress != null and playerAddress != ''">#{playerAddress},</if>
+            <if test="inviteCode != null and inviteCode != ''">#{inviteCode},</if>
+            <if test="inviteCodeBy != null">#{inviteCodeBy},</if>
+            <if test="invitePlayer != null">#{invitePlayer},</if>
+            <if test="payAmount != null and payAmount != ''">#{payAmount},</if>
+            <if test="bonusToken != null">#{bonusToken},</if>
+            <if test="bonusAmount != null">#{bonusAmount},</if>
+            <if test="bonus != null">#{bonus},</if>
+            <if test="winningStatus != null and winningStatus != ''">#{winningStatus},</if>
+            <if test="gameStatus != null and gameStatus != ''">#{gameStatus},</if>
+            <if test="lotteryTime != null">#{lotteryTime},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="updatePlayerInfo" parameterType="PlayerInfo">
+        update player_info
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="roundNo != null and roundNo != ''">round_no = #{roundNo},</if>
+            <if test="playerIndex != null">player_index = #{playerIndex},</if>
+            <if test="playerAddress != null and playerAddress != ''">player_address = #{playerAddress},</if>
+            <if test="inviteCode != null and inviteCode != ''">invite_code = #{inviteCode},</if>
+            <if test="inviteCodeBy != null">invite_code_by = #{inviteCodeBy},</if>
+            <if test="invitePlayer != null">invite_player = #{invitePlayer},</if>
+            <if test="payAmount != null and payAmount != ''">pay_amount = #{payAmount},</if>
+            <if test="bonusToken != null">bonus_token = #{bonusToken},</if>
+            <if test="bonusAmount != null">bonus_amount = #{bonusAmount},</if>
+            <if test="bonus != null">bonus = #{bonus},</if>
+            <if test="winningStatus != null and winningStatus != ''">winning_status = #{winningStatus},</if>
+            <if test="gameStatus != null and gameStatus != ''">game_status = #{gameStatus},</if>
+            <if test="lotteryTime != null">lottery_time = #{lotteryTime},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deletePlayerInfoById" parameterType="Long">
+        delete from player_info where id = #{id}
+    </delete>
+
+    <delete id="deletePlayerInfoByIds" parameterType="String">
+        delete from player_info where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="selectOnePlayer" parameterType="PlayerInfo" resultMap="PlayerInfoResult">
+        <include refid="selectPlayerInfoVo"/>
+        <where>
+            <if test="roundNo != null  and roundNo != ''"> and round_no = #{roundNo}</if>
+            <if test="playerIndex != null "> and player_index = #{playerIndex}</if>
+            <if test="playerAddress != null  and playerAddress != ''"> and player_address = #{playerAddress}</if>
+            <if test="inviteCode != null  and inviteCode != ''"> and invite_code = #{inviteCode}</if>
+            <if test="inviteCodeBy != null  and inviteCodeBy != ''"> and invite_code_by = #{inviteCodeBy}</if>
+            <if test="invitePlayer != null  and invitePlayer != ''"> and invite_player = #{invitePlayer}</if>
+            <if test="payAmount != null  and payAmount != ''"> and pay_amount = #{payAmount}</if>
+            <if test="bonusToken != null "> and bonus_token = #{bonusToken}</if>
+            <if test="bonusAmount != null "> and bonus_amount = #{bonusAmount}</if>
+            <if test="bonus != null "> and bonus = #{bonus}</if>
+            <if test="winningStatus != null  and winningStatus != ''"> and winning_status = #{winningStatus}</if>
+            <if test="gameStatus != null  and gameStatus != ''"> and game_status = #{gameStatus}</if>
+            <if test="lotteryTime != null "> and lottery_time = #{lotteryTime}</if>
+        </where>
+    </select>
+
+    <select id="selectPlayer" resultMap="PlayerInfoResult">
+        <include refid="selectPlayerInfoVo"/>
+        where
+        round_no = #{param1} and player_address = #{param2}
+    </select>
+
+    <select id="selectInviterList" parameterType="java.lang.String" resultType="java.lang.String">
+        SELECT
+            pi.player_address
+        FROM
+            player_info pi
+                LEFT JOIN player_info pi2 ON ( pi2.invite_code_by = pi.invite_code )
+        WHERE
+            pi2.round_no = #{param1} and pi2.game_status in('1','2')
+    </select>
+
+    <select id="selectInGamePlayer" resultMap="PlayerInfoResult">
+        <include refid="selectPlayerInfoVo"/>
+        where
+            round_no = #{param1} and player_address = #{param2} and game_status = '1'
+    </select>
+
+    <update id="updatePlayerGameOver" >
+        update player_info
+            set game_status = '2',update_time = now()
+        where round_no = #{param1} and game_status = #{param2}
+    </update>
+</mapper>

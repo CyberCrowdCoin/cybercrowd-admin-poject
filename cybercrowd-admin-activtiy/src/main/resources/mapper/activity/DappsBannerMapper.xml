@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.cybercrowd.admin.mapper.DappsBannerMapper">
+    
+    <resultMap type="DappsBanner" id="DappsBannerResult">
+        <result property="id"    column="id"    />
+        <result property="bannerIntro"    column="banner_intro"    />
+        <result property="bannerImageUrl"    column="banner_image_url"    />
+        <result property="jumpUrl"    column="jump_url"    />
+        <result property="bannerStatus"    column="banner_status"    />
+        <result property="expireTime"    column="expire_time"    />
+        <result property="extend"    column="extend"    />
+        <result property="extend2"    column="extend2"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectDappsBannerVo">
+        select id, banner_intro, banner_image_url, jump_url, banner_status, expire_time, extend, extend2, create_time, update_time from dapps_banner
+    </sql>
+
+    <select id="selectDappsBannerList" parameterType="DappsBanner" resultMap="DappsBannerResult">
+        <include refid="selectDappsBannerVo"/>
+        <where>  
+            <if test="bannerStatus != null  and bannerStatus != ''"> and banner_status = #{bannerStatus}</if>
+            <if test="expireTime != null "> and expire_time = #{expireTime}</if>
+            <if test="createTime != null "> and create_time = #{createTime}</if>
+        </where>
+    </select>
+    
+    <select id="selectDappsBannerById" parameterType="Long" resultMap="DappsBannerResult">
+        <include refid="selectDappsBannerVo"/>
+        where id = #{id}
+    </select>
+        
+    <insert id="insertDappsBanner" parameterType="DappsBanner" useGeneratedKeys="true" keyProperty="id">
+        insert into dapps_banner
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="bannerIntro != null">banner_intro,</if>
+            <if test="bannerImageUrl != null and bannerImageUrl != ''">banner_image_url,</if>
+            <if test="jumpUrl != null">jump_url,</if>
+            <if test="bannerStatus != null and bannerStatus != ''">banner_status,</if>
+            <if test="expireTime != null">expire_time,</if>
+            <if test="extend != null">extend,</if>
+            <if test="extend2 != null">extend2,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="bannerIntro != null">#{bannerIntro},</if>
+            <if test="bannerImageUrl != null and bannerImageUrl != ''">#{bannerImageUrl},</if>
+            <if test="jumpUrl != null">#{jumpUrl},</if>
+            <if test="bannerStatus != null and bannerStatus != ''">#{bannerStatus},</if>
+            <if test="expireTime != null">#{expireTime},</if>
+            <if test="extend != null">#{extend},</if>
+            <if test="extend2 != null">#{extend2},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateDappsBanner" parameterType="DappsBanner">
+        update dapps_banner
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="bannerIntro != null">banner_intro = #{bannerIntro},</if>
+            <if test="bannerImageUrl != null and bannerImageUrl != ''">banner_image_url = #{bannerImageUrl},</if>
+            <if test="jumpUrl != null">jump_url = #{jumpUrl},</if>
+            <if test="bannerStatus != null and bannerStatus != ''">banner_status = #{bannerStatus},</if>
+            <if test="expireTime != null">expire_time = #{expireTime},</if>
+            <if test="extend != null">extend = #{extend},</if>
+            <if test="extend2 != null">extend2 = #{extend2},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteDappsBannerById" parameterType="Long">
+        delete from dapps_banner where id = #{id}
+    </delete>
+
+    <delete id="deleteDappsBannerByIds" parameterType="String">
+        delete from dapps_banner where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

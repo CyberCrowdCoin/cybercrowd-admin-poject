@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.cybercrowd.admin.mapper.GameTimeControlMapper">
+    
+    <resultMap type="GameTimeControl" id="GameTimeControlResult">
+        <result property="id"    column="id"    />
+        <result property="gameStartTime"    column="game_start_time"    />
+        <result property="timeInterval"    column="time_interval"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectGameTimeControlVo">
+        select id, game_start_time, time_interval, create_time, update_time from game_time_control
+    </sql>
+
+    <select id="selectGameTimeControlList" parameterType="GameTimeControl" resultMap="GameTimeControlResult">
+        <include refid="selectGameTimeControlVo"/>
+        <where>  
+            <if test="gameStartTime != null "> and game_start_time = #{gameStartTime}</if>
+            <if test="timeInterval != null "> and time_interval = #{timeInterval}</if>
+        </where>
+    </select>
+    
+    <select id="selectGameTimeControlById" parameterType="Long" resultMap="GameTimeControlResult">
+        <include refid="selectGameTimeControlVo"/>
+        where id = #{id}
+    </select>
+        
+    <insert id="insertGameTimeControl" parameterType="GameTimeControl" useGeneratedKeys="true" keyProperty="id">
+        insert into game_time_control
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="gameStartTime != null">game_start_time,</if>
+            <if test="timeInterval != null">time_interval,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="gameStartTime != null">#{gameStartTime},</if>
+            <if test="timeInterval != null">#{timeInterval},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateGameTimeControl" parameterType="GameTimeControl">
+        update game_time_control
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="gameStartTime != null">game_start_time = #{gameStartTime},</if>
+            <if test="timeInterval != null">time_interval = #{timeInterval},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteGameTimeControlById" parameterType="Long">
+        delete from game_time_control where id = #{id}
+    </delete>
+
+    <delete id="deleteGameTimeControlByIds" parameterType="String">
+        delete from game_time_control where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="latestGameTimeControl" resultMap="GameTimeControlResult">
+        <include refid="selectGameTimeControlVo"/>
+        order by create_time desc limit 1
+    </select>
+</mapper>

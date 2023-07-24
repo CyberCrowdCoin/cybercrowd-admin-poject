@@ -1,0 +1,473 @@
+package org.cybercrowd.admin.service.impl;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
+import org.cybercrowd.admin.domain.PlayerGameControl;
+import org.cybercrowd.admin.mapper.PlayerGameControlMapper;
+import org.cybercrowd.admin.service.Player;
+import org.cybercrowd.admin.response.SyncPlayersRes;
+import org.cybercrowd.admin.service.ContractPlayerService;
+import org.cybercrowd.admin.service.IPlayerGameControlService;
+import org.cybercrowd.admin.common.annotation.DataSource;
+import org.cybercrowd.admin.common.constant.ActivityConstants;
+import org.cybercrowd.admin.common.enums.DataSourceType;
+import org.cybercrowd.admin.common.enums.ReturnCodeEnum;
+import org.cybercrowd.admin.common.enums.activity.PlayerGameControlStatusEnum;
+import org.cybercrowd.admin.common.enums.activity.PlayerGameStatusEnum;
+import org.cybercrowd.admin.common.enums.activity.PlayerWinningStatusEnum;
+import org.cybercrowd.admin.common.redisson.RedissonLock;
+import org.cybercrowd.admin.common.response.BaseResponse;
+import org.cybercrowd.admin.common.utils.DateUtils;
+import org.cybercrowd.admin.domain.PlayerInfo;
+import org.cybercrowd.admin.mapper.PlayerInfoMapper;
+import org.redisson.api.RedissonClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.security.core.parameters.P;
+import org.springframework.stereotype.Service;
+import org.cybercrowd.admin.service.IPlayerInfoService;
+import org.web3j.abi.FunctionEncoder;
+import org.web3j.abi.FunctionReturnDecoder;
+import org.web3j.abi.TypeReference;
+import org.web3j.abi.datatypes.DynamicArray;
+import org.web3j.abi.datatypes.Function;
+import org.web3j.abi.datatypes.Type;
+import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.DefaultBlockParameterName;
+import org.web3j.protocol.core.methods.request.Transaction;
+import org.web3j.protocol.core.methods.response.EthCall;
+
+/**
+ * 游戏者信息Service业务层处理
+ * 
+ * @author Gengchaonan
+ * @date 2023-03-07
+ */
+@Service
+@DataSource(value = DataSourceType.SLAVE)
+public class PlayerInfoServiceImpl implements IPlayerInfoService {
+
+    private Logger logger = LoggerFactory.getLogger(PlayerInfoServiceImpl.class);
+
+    @Value("${activity.player_contract}")
+    private String playerContract;
+
+    @Autowired
+    PlayerInfoMapper playerInfoMapper;
+    @Autowired
+    PlayerGameControlMapper playerGameControlMapper;
+
+    @Autowired
+    Web3j web3j;
+
+    @Autowired
+    StringRedisTemplate redisTemplate;
+    @Autowired
+    RedissonClient redissonClient;
+
+    @Autowired
+    ContractPlayerService contractPlayerService;
+    @Autowired
+    IPlayerGameControlService playerGameControlService;
+
+    /**
+     * 查询游戏者信息
+     * 
+     * @param id 游戏者信息主键
+     * @return 游戏者信息
+     */
+    @Override
+    public PlayerInfo selectPlayerInfoById(Long id)
+    {
+        return playerInfoMapper.selectPlayerInfoById(id);
+    }
+
+    /**
+     * 查询游戏者信息列表
+     * 
+     * @param playerInfo 游戏者信息
+     * @return 游戏者信息
+     */
+    @Override
+    public List<PlayerInfo> selectPlayerInfoList(PlayerInfo playerInfo)
+    {
+        return playerInfoMapper.selectPlayerInfoList(playerInfo);
+    }
+
+    /**
+     * 新增游戏者信息
+     * 
+     * @param playerInfo 游戏者信息
+     * @return 结果
+     */
+    @Override
+    public int insertPlayerInfo(PlayerInfo playerInfo)
+    {
+        playerInfo.setCreateTime(DateUtils.getNowDate());
+        return playerInfoMapper.insertPlayerInfo(playerInfo);
+    }
+
+    /**
+     * 修改游戏者信息
+     * 
+     * @param playerInfo 游戏者信息
+     * @return 结果
+     */
+    @Override
+    public int updatePlayerInfo(PlayerInfo playerInfo)
+    {
+        playerInfo.setUpdateTime(DateUtils.getNowDate());
+        return playerInfoMapper.updatePlayerInfo(playerInfo);
+    }
+
+    /**
+     * 批量删除游戏者信息
+     * 
+     * @param ids 需要删除的游戏者信息主键
+     * @return 结果
+     */
+    @Override
+    public int deletePlayerInfoByIds(Long[] ids)
+    {
+        return playerInfoMapper.deletePlayerInfoByIds(ids);
+    }
+
+    /**
+     * 删除游戏者信息信息
+     * 
+     * @param id 游戏者信息主键
+     * @return 结果
+     */
+    @Override
+    public int deletePlayerInfoById(Long id)
+    {
+        return playerInfoMapper.deletePlayerInfoById(id);
+    }
+
+    @Override
+    public SyncPlayersRes syncPlayer() {
+////        logger.info("进入同步游戏玩家参与者数据接口.....");
+////        SyncPlayersRes syncPlayersRes = new SyncPlayersRes();
+////
+////        RedissonLock lock = new RedissonLock(
+////                redissonClient,ActivityConstants.PLAYER_UPATE_LOCK_KEY);
+////        try {
+////            if(lock.lock()){
+////                //当前最新玩家游戏控制信息
+////                PlayerGameControl playerGameControl =
+////                        playerGameControlMapper.latestPlayerGameControl(
+////                                PlayerGameControlStatusEnum.GAME_STATUS_0.getCode());
+////
+////                if(null == playerGameControl){
+////                    //当前没有进行中的游戏
+////                    logger.info("同步游戏玩家数据接口,当前没有已开始的游戏,无需处理");
+////                    syncPlayersRes.setReturnCodeEnum(ReturnCodeEnum.PLAYER_GAME_NOT_SYNC_CONDITION_ERROR);
+////                    return syncPlayersRes;
+////                }
+////
+////                //拉取最新游戏参与者数据
+////                ArrayList<Player> players = contractPlayerService.pullPlayer(playerContract);
+////                if (null == players || players.size() == 0) {
+////                    //返回异常
+////                    logger.info("同步游戏玩家数据接口,拉取合约中玩家数据失败");
+////                    syncPlayersRes.setReturnCodeEnum(ReturnCodeEnum.PLAYER_PULL_DATA_ERROR);
+////                    return syncPlayersRes;
+////                }else {
+////                    String latestRoundNo = playerGameControl.getLatestRoundNo();
+////                    for (Player player:players) {
+////                        String playerAddress = player.playerAddress.getValue();
+////                        String inviteCode = player.inviteCode.getValue();
+////                        //更新游戏玩家游戏状态, 参与中
+////                        PlayerInfo playerInfo = playerInfoMapper.selectPlayer(latestRoundNo, playerAddress);
+////                        if(null != playerInfo){
+////                            playerInfo.setGameStatus(PlayerGameStatusEnum.GAME_STATUS_1.getCode());
+////                            playerInfo.setUpdateTime(new Date());
+////                            //存在邀请码,更新玩家被邀请信息
+////                            if (!StringUtils.isEmpty(inviteCode)) {
+////                                playerInfo.setInviteCodeBy(inviteCode);
+////                            }
+////                            playerInfoMapper.updatePlayerInfo(playerInfo);
+////                        }
+////                    }
+////                    //查询本轮所有有效邀请者列表
+////                    List<String> inviters = playerInfoMapper.selectInviterList(latestRoundNo);
+////                    syncPlayersRes.setInviters(inviters);
+////
+////                    //更新玩家游戏控制信息,开奖中
+////                    playerGameControl.setUpdateTime(new Date());
+////                    playerGameControl.setGameStatus(PlayerGameControlStatusEnum.GAME_STATUS_1.getCode());
+////                    playerGameControlMapper.updatePlayerGameControl(playerGameControl);
+////                }
+////            }else {
+////                logger.error("同步游戏玩家数据接口,获取玩家更新锁失败....");
+////                syncPlayersRes.setReturnCodeEnum(ReturnCodeEnum.PLAYER_SYNC_ING_ERROR);
+////            }
+////        }catch (Exception e){
+////            logger.error("同步游戏玩家数据接口,执行异常:{}",e.getMessage(),e);
+////            syncPlayersRes.setReturnCodeEnum(ReturnCodeEnum.FAIL);
+////        }finally {
+////            lock.unlock();
+////        }
+//        return syncPlayersRes;
+        return null;
+    }
+
+    @Override
+    public BaseResponse syncPlayerWinning() {
+//        BaseResponse baseResponse = new BaseResponse();
+//        logger.info("进入同步游戏玩家获胜数据接口.....");
+//        RedissonLock lock = new RedissonLock(
+//                redissonClient,ActivityConstants.PLAYER_WINNING_UPATE_LOCK_KEY);
+//        try {
+//            if(lock.lock()){
+//                //当前最新玩家游戏控制信息
+//                PlayerGameControl playerGameControl =
+//                        playerGameControlMapper.latestPlayerGameControl(
+//                                PlayerGameControlStatusEnum.GAME_STATUS_1.getCode());
+//                if(null == playerGameControl){
+//                    //当前没有进行中的游戏
+//                    logger.info("同步游戏玩家获胜数据接口,当前没有开奖中的游戏,无需处理");
+//                    baseResponse.setReturnCodeEnum(ReturnCodeEnum.PLAYER_GAME_NOT_SYNC_CONDITION_ERROR);
+//                    return baseResponse;
+//                }
+//
+//                List<Player> players = contractPlayerService.pullPlayerWinners(playerContract);
+//                if (null == players || players.size() == 0) {
+//                    //返回异常
+//                    logger.info("同步游戏玩家获胜数据接口,拉取合约中玩家获胜数据失败");
+//                    baseResponse.setReturnCodeEnum(ReturnCodeEnum.PLAYER_WINNING_PULL_ERROR);
+//                    return baseResponse;
+//                }else {
+//                    //当前最新游戏回合号
+//                    String roundNo = playerGameControl.getLatestRoundNo();
+//                    for (Player player : players) {
+//                        String playerAddress = player.playerAddress.getValue();
+//                        Long boun = player.bonus.getValue().longValue();
+//                        BigDecimal bounBigDecimal = new BigDecimal(boun).divide(
+//                                new BigDecimal(1000000000000000000l)).setScale(6, BigDecimal.ROUND_HALF_UP);
+//                        //更新中奖状态和奖金金额
+//                        PlayerInfo playerInfo = playerInfoMapper.selectInGamePlayer(roundNo, playerAddress);
+//                        if (null != playerInfo) {
+//                            playerInfo.setBonusAmount(boun);
+//                            playerInfo.setBonus(bounBigDecimal);
+//                            playerInfo.setWinningStatus(PlayerWinningStatusEnum.WINNING_STATUS_1.getCode());
+//                            playerInfo.setGameStatus(PlayerGameStatusEnum.GAME_STATUS_2.getCode());
+//                            playerInfo.setLotteryTime(new Date());
+//                            playerInfo.setUpdateTime(new Date());
+//                            playerInfoMapper.updatePlayerInfo(playerInfo);
+//                        }
+//                    }
+//                    //更新玩家游戏结束状态
+//                    playerInfoMapper.updatePlayerGameOver(
+//                            roundNo,PlayerGameStatusEnum.GAME_STATUS_1.getCode());
+//                    //更新当前玩家游戏控制信息
+//                    playerGameControl.setUpdateTime(new Date());
+//                    playerGameControl.setGameStatus(PlayerGameControlStatusEnum.GAME_STATUS_2.getCode());
+//                    playerGameControlMapper.updatePlayerGameControl(playerGameControl);
+//                    //创建新的玩家游戏控制信息
+//                    createNewPlayerGameControl(playerGameControl);
+//
+//                }
+//            }else {
+//                logger.error("同步游戏玩家获胜数据接口,获取更新锁失败...." );
+//                baseResponse.setReturnCodeEnum(ReturnCodeEnum.PLAYER_SYNC_ING_ERROR);
+//            }
+//        }catch (Exception e){
+//            logger.error("同步游戏玩家获胜数据接口,执行异常:{}",e.getMessage(),e);
+//            baseResponse.setReturnCodeEnum(ReturnCodeEnum.FAIL);
+//        }finally {
+//            lock.unlock();
+//        }
+//        return baseResponse;
+        return null;
+    }
+
+    @Override
+    public BaseResponse syncPlayerV2() {
+        BaseResponse baseResponse = new BaseResponse();
+
+        logger.info("进入同步游戏玩家参与者数据接口.....");
+
+        RedissonLock lock = new RedissonLock(
+                redissonClient,ActivityConstants.PLAYER_UPATE_LOCK_KEY);
+        try {
+            if(lock.lock()){
+                //当前最新玩家游戏控制信息
+                PlayerGameControl playerGameControl =
+                        playerGameControlMapper.latestPlayerGameControl(
+                                PlayerGameControlStatusEnum.GAME_STATUS_0.getCode());
+
+                if(null == playerGameControl){
+                    //当前没有进行中的游戏
+                    logger.info("同步游戏玩家数据接口,当前没有已开始的游戏,无需处理");
+                    baseResponse.setReturnCodeEnum(ReturnCodeEnum.PLAYER_GAME_NOT_SYNC_CONDITION_ERROR);
+                    return baseResponse;
+                }
+
+                //拉取最新游戏参与者数据
+                ArrayList<Player> players = contractPlayerService.pullPlayer(playerContract);
+                if (null == players || players.size() == 0) {
+                    //返回异常
+                    logger.info("同步游戏玩家数据接口,拉取合约中玩家数据失败");
+                    baseResponse.setReturnCodeEnum(ReturnCodeEnum.PLAYER_PULL_DATA_ERROR);
+                    return baseResponse;
+                }else {
+                    String latestRoundNo = playerGameControl.getLatestRoundNo();
+                    for (Player player:players) {
+                        String playerAddress = player.playerAddress.getValue();
+                        long playerIndex = player.roundIndex.getValue().longValue();
+                        Boolean isWinner = player.isWinner.getValue();
+
+                        PlayerInfo playerReq = new PlayerInfo();
+                        playerReq.setRoundNo(latestRoundNo);
+                        playerReq.setPlayerIndex(playerIndex);
+                        playerReq.setPlayerAddress(playerAddress);
+                        PlayerInfo playerInfo = playerInfoMapper.selectOnePlayer(playerReq);
+                        if(null == playerInfo){
+                            playerInfo = createNewPlayerInfo(player,latestRoundNo);
+                            if(isWinner){
+                                //中奖用户
+                                Long boun = player.bonus.getValue().longValue();
+                                BigDecimal bounBigDecimal = new BigDecimal(boun).divide(
+                                        new BigDecimal(1000000000000000000l)).setScale(8, BigDecimal.ROUND_HALF_UP);
+                                playerInfo.setBonusAmount(boun);
+                                playerInfo.setBonus(bounBigDecimal);
+                                playerInfo.setWinningStatus(PlayerWinningStatusEnum.WINNING_STATUS_1.getCode());
+                                playerInfo.setLotteryTime(new Date());
+                            }
+                            playerInfo.setGameStatus(PlayerGameStatusEnum.GAME_STATUS_2.getCode());
+                            playerInfoMapper.insertPlayerInfo(playerInfo);
+                        }
+                    }
+
+                    //更新玩家游戏控制信息,开奖中
+                    playerGameControl.setUpdateTime(new Date());
+                    playerGameControl.setGameStatus(PlayerGameControlStatusEnum.GAME_STATUS_2.getCode());
+                    playerGameControlMapper.updatePlayerGameControl(playerGameControl);
+
+                    //创建新的玩家游戏控制信息
+                    createNewPlayerGameControl(playerGameControl);
+
+                }
+            }else {
+                logger.error("同步游戏玩家数据接口,获取玩家更新锁失败....");
+                baseResponse.setReturnCodeEnum(ReturnCodeEnum.PLAYER_SYNC_ING_ERROR);
+            }
+        }catch (Exception e){
+            logger.error("同步游戏玩家数据接口,执行异常:{}",e.getMessage(),e);
+            baseResponse.setReturnCodeEnum(ReturnCodeEnum.FAIL);
+        }finally {
+            lock.unlock();
+        }
+        return baseResponse;
+    }
+
+    @Override
+    public BaseResponse syncPlayerWinningV2() {
+        BaseResponse baseResponse = new BaseResponse();
+        logger.info("进入同步游戏玩家获胜数据接口V2.....");
+        RedissonLock lock = new RedissonLock(
+                redissonClient,ActivityConstants.PLAYER_WINNING_UPATE_LOCK_KEY);
+        try {
+            if(lock.lock()){
+                //当前最新玩家游戏控制信息
+                PlayerGameControl playerGameControl =
+                        playerGameControlMapper.latestPlayerGameControl(
+                                PlayerGameControlStatusEnum.GAME_STATUS_1.getCode());
+                if(null == playerGameControl){
+                    //当前没有进行中的游戏
+                    logger.info("同步游戏玩家获胜数据接口V2,当前没有开奖中的游戏,无需处理");
+                    baseResponse.setReturnCodeEnum(ReturnCodeEnum.PLAYER_GAME_NOT_SYNC_CONDITION_ERROR);
+                    return baseResponse;
+                }
+
+                List<Player> players = contractPlayerService.pullPlayerWinners(playerContract);
+                if (null == players || players.size() == 0) {
+                    //返回异常
+                    logger.info("同步游戏玩家获胜数据接口V2,拉取合约中玩家获胜数据失败");
+                    baseResponse.setReturnCodeEnum(ReturnCodeEnum.PLAYER_WINNING_PULL_ERROR);
+                    return baseResponse;
+                }else {
+                    //当前最新游戏回合号
+                    String roundNo = playerGameControl.getLatestRoundNo();
+                    for (Player player : players) {
+                        String playerAddress = player.playerAddress.getValue();
+                        Long playerIndex = player.roundIndex.getValue().longValue();
+                        Long boun = player.bonus.getValue().longValue();
+                        BigDecimal bounBigDecimal = new BigDecimal(boun).divide(
+                                new BigDecimal(1000000000000000000l)).setScale(6, BigDecimal.ROUND_HALF_UP);
+                        //更新中奖状态和奖金金额
+                        PlayerInfo playerParams = new PlayerInfo();
+                        playerParams.setGameStatus(PlayerGameStatusEnum.GAME_STATUS_1.getCode());
+                        playerParams.setPlayerIndex(playerIndex);
+                        playerParams.setPlayerAddress(playerAddress);
+                        playerParams.setRoundNo(roundNo);
+                        PlayerInfo playerInfo = playerInfoMapper.selectOnePlayer(playerParams);
+                        if (null != playerInfo) {
+                            playerInfo.setBonusAmount(boun);
+                            playerInfo.setBonus(bounBigDecimal);
+                            playerInfo.setWinningStatus(PlayerWinningStatusEnum.WINNING_STATUS_1.getCode());
+                            playerInfo.setGameStatus(PlayerGameStatusEnum.GAME_STATUS_2.getCode());
+                            playerInfo.setLotteryTime(new Date());
+                            playerInfo.setUpdateTime(new Date());
+                            playerInfoMapper.updatePlayerInfo(playerInfo);
+                        }
+                    }
+                    //更新玩家游戏结束状态
+                    playerInfoMapper.updatePlayerGameOver(
+                            roundNo,PlayerGameStatusEnum.GAME_STATUS_1.getCode());
+                    //更新当前玩家游戏控制信息
+                    playerGameControl.setUpdateTime(new Date());
+                    playerGameControl.setGameStatus(PlayerGameControlStatusEnum.GAME_STATUS_2.getCode());
+                    playerGameControlMapper.updatePlayerGameControl(playerGameControl);
+                    //创建新的玩家游戏控制信息
+                    createNewPlayerGameControl(playerGameControl);
+                }
+            }else {
+                logger.error("同步游戏玩家获胜数据接口V2,获取更新锁失败...." );
+                baseResponse.setReturnCodeEnum(ReturnCodeEnum.PLAYER_SYNC_ING_ERROR);
+            }
+        }catch (Exception e){
+            logger.error("同步游戏玩家获胜数据接口V2,执行异常:{}",e.getMessage(),e);
+            baseResponse.setReturnCodeEnum(ReturnCodeEnum.FAIL);
+        }finally {
+            lock.unlock();
+        }
+        return baseResponse;
+    }
+
+    private PlayerInfo createNewPlayerInfo(Player player,String latestRoundNo){
+        PlayerInfo playerInfo = new PlayerInfo();
+        playerInfo.setPlayerIndex(player.roundIndex.getValue().longValue());
+        playerInfo.setPlayerAddress(player.playerAddress.getValue());
+        playerInfo.setInvitePlayer(null == player.inviterAddress ? null:player.inviterAddress.getValue());
+        playerInfo.setPayAmount(player.amount.getValue().longValue());
+        playerInfo.setRoundNo(latestRoundNo);
+//        playerInfo.setCreateTime(new Date());
+        playerInfo.setUpdateTime(new Date());
+        playerInfo.setCreateTime(new Date(player.timestamp.getValue().longValue()*1000));
+        playerInfo.setWinningStatus(PlayerWinningStatusEnum.WINNING_STATUS_0.getCode());
+        playerInfo.setGameStatus(PlayerGameStatusEnum.GAME_STATUS_1.getCode());
+        return playerInfo;
+    }
+
+    private void createNewPlayerGameControl(PlayerGameControl oldPlayerGameControl) {
+        PlayerGameControl playerGameControl = new PlayerGameControl();
+        playerGameControl.setGameStatus(PlayerGameControlStatusEnum.GAME_STATUS_0.getCode());
+        playerGameControl.setCreateTime(new Date());
+        playerGameControl.setUpdateTime(new Date());
+        playerGameControl.setLatestRoundNo(String.valueOf(Long.valueOf(oldPlayerGameControl.getLatestRoundNo()) + 1));
+        playerGameControl.setPreviousRoundNo(oldPlayerGameControl.getLatestRoundNo());
+        playerGameControl.setNextGameTime(null);
+        playerGameControlMapper.insertPlayerGameControl(playerGameControl);
+    }
+
+}

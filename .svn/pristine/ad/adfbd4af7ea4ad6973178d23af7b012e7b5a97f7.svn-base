@@ -1,0 +1,37 @@
+package org.cybercrowd.admin;
+
+import org.cybercrowd.admin.common.utils.SecurityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.web3j.protocol.Web3j;
+import org.web3j.protocol.http.HttpService;
+
+/**
+ * 启动程序
+ * 
+ * @author 
+ */
+@SpringBootApplication(exclude = { DataSourceAutoConfiguration.class })
+public class CyberCrowdAdminApplication {
+
+    private static Logger logger = LoggerFactory.getLogger(CyberCrowdAdminApplication.class);
+
+    public static void main(String[] args) {
+        // System.setProperty("spring.devtools.restart.enabled", "false");
+        SpringApplication.run(CyberCrowdAdminApplication.class, args);
+        logger.info("CyberCrowdAdminApplication Run Success ........ ");
+    }
+
+    @Value("${web3j.ethereum.rpc-url}")
+    private String ethereumRpcUrl;
+
+    @Bean
+    public Web3j initWeb3jClient(){
+        return Web3j.build(new HttpService(ethereumRpcUrl));
+    }
+}

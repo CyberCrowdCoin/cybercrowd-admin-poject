@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.cybercrowd.admin.mapper.DappsInfoMapper">
+    
+    <resultMap type="DappsInfo" id="DappsInfoResult">
+        <result property="id"    column="id"    />
+        <result property="dappType"    column="dapp_type"    />
+        <result property="dappName"    column="dapp_name"    />
+        <result property="dappLogo"    column="dapp_logo"    />
+        <result property="dappIntro"    column="dapp_intro"    />
+        <result property="dappDetailsIntro"    column="dapp_details_intro"    />
+        <result property="dappLink"    column="dapp_link"    />
+        <result property="dappOfficialWebsite"    column="dapp_official_website"    />
+        <result property="dappTwitter"    column="dapp_twitter"    />
+        <result property="dappDiscrod"    column="dapp_discrod"    />
+        <result property="dappTelegram"    column="dapp_telegram"    />
+        <result property="dappHot"    column="dapp_hot"    />
+        <result property="dappHotStatus"    column="dapp_hot_status"    />
+        <result property="dappStatus"    column="dapp_status"    />
+        <result property="dappOfflineTime"    column="dapp_offline_time"    />
+        <result property="extend"    column="extend"    />
+        <result property="extend2"    column="extend2"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectDappsInfoVo">
+        select id, dapp_type, dapp_name, dapp_logo, dapp_intro, dapp_details_intro, dapp_link, dapp_official_website, dapp_twitter, dapp_discrod, dapp_telegram, dapp_hot, dapp_hot_status, dapp_status, dapp_offline_time, extend, extend2, create_time, update_time from dapps_info
+    </sql>
+
+    <select id="selectDappsInfoList" parameterType="DappsInfo" resultMap="DappsInfoResult">
+        <include refid="selectDappsInfoVo"/>
+        <where>  
+            <if test="dappType != null  and dappType != ''"> and dapp_type = #{dappType}</if>
+            <if test="dappName != null  and dappName != ''"> and dapp_name like concat('%', #{dappName}, '%')</if>
+            <if test="dappHotStatus != null  and dappHotStatus != ''"> and dapp_hot_status = #{dappHotStatus}</if>
+            <if test="dappStatus != null  and dappStatus != ''"> and dapp_status = #{dappStatus}</if>
+            <if test="dappOfflineTime != null "> and dapp_offline_time = #{dappOfflineTime}</if>
+        </where>
+    </select>
+    
+    <select id="selectDappsInfoById" parameterType="Long" resultMap="DappsInfoResult">
+        <include refid="selectDappsInfoVo"/>
+        where id = #{id}
+    </select>
+        
+    <insert id="insertDappsInfo" parameterType="DappsInfo" useGeneratedKeys="true" keyProperty="id">
+        insert into dapps_info
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="dappType != null">dapp_type,</if>
+            <if test="dappName != null and dappName != ''">dapp_name,</if>
+            <if test="dappLogo != null and dappLogo != ''">dapp_logo,</if>
+            <if test="dappIntro != null and dappIntro != ''">dapp_intro,</if>
+            <if test="dappDetailsIntro != null">dapp_details_intro,</if>
+            <if test="dappLink != null and dappLink != ''">dapp_link,</if>
+            <if test="dappOfficialWebsite != null and dappOfficialWebsite != ''">dapp_official_website,</if>
+            <if test="dappTwitter != null">dapp_twitter,</if>
+            <if test="dappDiscrod != null">dapp_discrod,</if>
+            <if test="dappTelegram != null">dapp_telegram,</if>
+            <if test="dappHot != null">dapp_hot,</if>
+            <if test="dappHotStatus != null and dappHotStatus != ''">dapp_hot_status,</if>
+            <if test="dappStatus != null and dappStatus != ''">dapp_status,</if>
+            <if test="dappOfflineTime != null">dapp_offline_time,</if>
+            <if test="extend != null">extend,</if>
+            <if test="extend2 != null">extend2,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="dappType != null">#{dappType},</if>
+            <if test="dappName != null and dappName != ''">#{dappName},</if>
+            <if test="dappLogo != null and dappLogo != ''">#{dappLogo},</if>
+            <if test="dappIntro != null and dappIntro != ''">#{dappIntro},</if>
+            <if test="dappDetailsIntro != null">#{dappDetailsIntro},</if>
+            <if test="dappLink != null and dappLink != ''">#{dappLink},</if>
+            <if test="dappOfficialWebsite != null and dappOfficialWebsite != ''">#{dappOfficialWebsite},</if>
+            <if test="dappTwitter != null">#{dappTwitter},</if>
+            <if test="dappDiscrod != null">#{dappDiscrod},</if>
+            <if test="dappTelegram != null">#{dappTelegram},</if>
+            <if test="dappHot != null">#{dappHot},</if>
+            <if test="dappHotStatus != null and dappHotStatus != ''">#{dappHotStatus},</if>
+            <if test="dappStatus != null and dappStatus != ''">#{dappStatus},</if>
+            <if test="dappOfflineTime != null">#{dappOfflineTime},</if>
+            <if test="extend != null">#{extend},</if>
+            <if test="extend2 != null">#{extend2},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updateDappsInfo" parameterType="DappsInfo">
+        update dapps_info
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="dappType != null">dapp_type = #{dappType},</if>
+            <if test="dappName != null and dappName != ''">dapp_name = #{dappName},</if>
+            <if test="dappLogo != null and dappLogo != ''">dapp_logo = #{dappLogo},</if>
+            <if test="dappIntro != null and dappIntro != ''">dapp_intro = #{dappIntro},</if>
+            <if test="dappDetailsIntro != null">dapp_details_intro = #{dappDetailsIntro},</if>
+            <if test="dappLink != null and dappLink != ''">dapp_link = #{dappLink},</if>
+            <if test="dappOfficialWebsite != null and dappOfficialWebsite != ''">dapp_official_website = #{dappOfficialWebsite},</if>
+            <if test="dappTwitter != null">dapp_twitter = #{dappTwitter},</if>
+            <if test="dappDiscrod != null">dapp_discrod = #{dappDiscrod},</if>
+            <if test="dappTelegram != null">dapp_telegram = #{dappTelegram},</if>
+            <if test="dappHot != null">dapp_hot = #{dappHot},</if>
+            <if test="dappHotStatus != null and dappHotStatus != ''">dapp_hot_status = #{dappHotStatus},</if>
+            <if test="dappStatus != null and dappStatus != ''">dapp_status = #{dappStatus},</if>
+            <if test="dappOfflineTime != null">dapp_offline_time = #{dappOfflineTime},</if>
+            <if test="extend != null">extend = #{extend},</if>
+            <if test="extend2 != null">extend2 = #{extend2},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteDappsInfoById" parameterType="Long">
+        delete from dapps_info where id = #{id}
+    </delete>
+
+    <delete id="deleteDappsInfoByIds" parameterType="String">
+        delete from dapps_info where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

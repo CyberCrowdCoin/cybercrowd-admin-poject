@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>cybercrowd-admin-parent</artifactId>
+        <groupId>org.cybercrowd.admin</groupId>
+        <version>1.0.0</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>cybercrowd-admin-system</artifactId>
+
+    <description>
+        system系统模块
+    </description>
+
+    <dependencies>
+
+        <!-- 通用工具-->
+        <dependency>
+            <groupId>org.cybercrowd.admin</groupId>
+            <artifactId>cybercrowd-admin-common</artifactId>
+        </dependency>
+
+    </dependencies>
+
+    <distributionManagement>
+        <repository>
+            <id>cybercrowd-nexus-releases</id>
+            <url>http://13.251.21.157:19100/nexus/content/repositories/releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>cybercrowd-nexus-snapshots</id>
+            <url>http://13.251.21.157:19100/nexus/content/repositories/snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
+</project>

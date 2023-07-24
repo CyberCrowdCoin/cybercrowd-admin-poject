@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.cybercrowd.admin.mapper.PlayerGameControlMapper">
+    
+    <resultMap type="PlayerGameControl" id="PlayerGameControlResult">
+        <result property="id"    column="id"    />
+        <result property="latestRoundNo"    column="latest_round_no"    />
+        <result property="previousRoundNo"    column="previous_round_no"    />
+        <result property="gameStatus"    column="game_status"    />
+        <result property="nextGameTime"    column="next_game_time"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+    </resultMap>
+
+    <sql id="selectPlayerGameControlVo">
+        select id, latest_round_no, previous_round_no, game_status, next_game_time, create_time, update_time from player_game_control
+    </sql>
+
+    <select id="selectPlayerGameControlList" parameterType="PlayerGameControl" resultMap="PlayerGameControlResult">
+        <include refid="selectPlayerGameControlVo"/>
+        <where>  
+            <if test="latestRoundNo != null  and latestRoundNo != ''"> and latest_round_no = #{latestRoundNo}</if>
+            <if test="previousRoundNo != null  and previousRoundNo != ''"> and previous_round_no = #{previousRoundNo}</if>
+            <if test="gameStatus != null  and gameStatus != ''"> and game_status = #{gameStatus}</if>
+            <if test="nextGameTime != null "> and next_game_time = #{nextGameTime}</if>
+        </where>
+    </select>
+    
+    <select id="selectPlayerGameControlById" parameterType="Long" resultMap="PlayerGameControlResult">
+        <include refid="selectPlayerGameControlVo"/>
+        where id = #{id}
+    </select>
+        
+    <insert id="insertPlayerGameControl" parameterType="PlayerGameControl" useGeneratedKeys="true" keyProperty="id">
+        insert into player_game_control
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="latestRoundNo != null and latestRoundNo != ''">latest_round_no,</if>
+            <if test="previousRoundNo != null">previous_round_no,</if>
+            <if test="gameStatus != null and gameStatus != ''">game_status,</if>
+            <if test="nextGameTime != null">next_game_time,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="latestRoundNo != null and latestRoundNo != ''">#{latestRoundNo},</if>
+            <if test="previousRoundNo != null">#{previousRoundNo},</if>
+            <if test="gameStatus != null and gameStatus != ''">#{gameStatus},</if>
+            <if test="nextGameTime != null">#{nextGameTime},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+         </trim>
+    </insert>
+
+    <update id="updatePlayerGameControl" parameterType="PlayerGameControl">
+        update player_game_control
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="latestRoundNo != null and latestRoundNo != ''">latest_round_no = #{latestRoundNo},</if>
+            <if test="previousRoundNo != null">previous_round_no = #{previousRoundNo},</if>
+            <if test="gameStatus != null and gameStatus != ''">game_status = #{gameStatus},</if>
+            <if test="nextGameTime != null">next_game_time = #{nextGameTime},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deletePlayerGameControlById" parameterType="Long">
+        delete from player_game_control where id = #{id}
+    </delete>
+
+    <delete id="deletePlayerGameControlByIds" parameterType="String">
+        delete from player_game_control where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="latestGameRoundNo" resultType="java.lang.String">
+        select
+            latest_round_no
+        from player_game_control where game_status = '0'
+    </select>
+
+    <select id="latestPlayerGameControl" resultMap="PlayerGameControlResult">
+        <include refid="selectPlayerGameControlVo"/>
+        where game_status = #{playerGameStatus}
+    </select>
+</mapper>
